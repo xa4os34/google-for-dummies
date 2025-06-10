@@ -1,0 +1,13 @@
+/home/xa4/Git/google-for-dummies/src/share/obj/Debug/net8.0/share.csproj.AssemblyReference.cache
+/home/xa4/Git/google-for-dummies/src/share/obj/Debug/net8.0/share.GeneratedMSBuildEditorConfig.editorconfig
+/home/xa4/Git/google-for-dummies/src/share/obj/Debug/net8.0/share.AssemblyInfoInputs.cache
+/home/xa4/Git/google-for-dummies/src/share/obj/Debug/net8.0/share.AssemblyInfo.cs
+/home/xa4/Git/google-for-dummies/src/share/obj/Debug/net8.0/share.csproj.CoreCompileInputs.cache
+/home/xa4/Git/google-for-dummies/src/share/obj/Debug/net8.0/share.sourcelink.json
+/home/xa4/Git/google-for-dummies/src/share/bin/Debug/net8.0/share.deps.json
+/home/xa4/Git/google-for-dummies/src/share/bin/Debug/net8.0/share.dll
+/home/xa4/Git/google-for-dummies/src/share/bin/Debug/net8.0/share.pdb
+/home/xa4/Git/google-for-dummies/src/share/obj/Debug/net8.0/share.dll
+/home/xa4/Git/google-for-dummies/src/share/obj/Debug/net8.0/refint/share.dll
+/home/xa4/Git/google-for-dummies/src/share/obj/Debug/net8.0/share.pdb
+/home/xa4/Git/google-for-dummies/src/share/obj/Debug/net8.0/ref/share.dll
