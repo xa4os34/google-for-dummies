@@ -1,0 +1,52 @@
+services:
+  indexer:
+    build: 
+      context: src/
+      dockerfile: indexer/Dockerfile
+    restart: always
+    environment:
+      EMBEDDER_MODEL_URL: "https://huggingface.co/lm-kit/nomic-embed-text-1.5/resolve/main/nomic-embed-text-1.5-F16.gguf"
+      DB_CONNSTR: "Host=database;Username=postgres;Password=postgres;Database=postgres"
+      RABBITMQ_CONNSTR: "amqp://guest:guest@rabbitmq/" 
+
+    depends_on:
+      - database
+      - rabbitmq
+    networks:
+      - frontend
+      - backend
+
+  rabbitmq:
+    image: "rabbitmq:alpine"
+    restart: always
+    networks:
+      - backend
+
+  database:
+    build: src/database
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_PASSWORD: postgres
+    networks:
+      - backend
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - backend
+      - frontend
+
+
+
+networks:
+  frontend:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
+  backend:
+    driver: bridge
+    internal: true
