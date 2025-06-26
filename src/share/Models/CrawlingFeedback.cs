@@ -9,5 +9,5 @@ public class CrawlingFeedback
 
     public Uri[] DisallowedUrls  { get; init; } = new Uri[0];
     
-    public TimeSpan? newCrawlingDelay { get; init; }
+    public TimeSpan? NewCrawlingDelay { get; init; }
 }
