@@ -1,3 +1,3 @@
 namespace Gfd.Models;
 
-record CrawlnigRecord(string Url);
+public record CrawlnigRecord(string Url);
