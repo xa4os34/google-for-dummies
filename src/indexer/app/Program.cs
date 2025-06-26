@@ -3,6 +3,7 @@ using LMKit.Model;
 using LMKit.Embeddings;
 using RabbitMQ.Client;
 using Npgsql;
+using Gfd.Models;
 
 
 const string QueueName = "IndexingQueue";
@@ -80,20 +81,3 @@ WebsiteRecord IndexingDataToWebsiteRecord(IndexingData data)
             PageMeaning: pageMeaning
             );
 }
-
-record IndexingData(
-    string Url,
-    string Title,
-    string Description,
-    string PageText
-);
-
-record WebsiteRecord(
-    Guid Id,
-    string Url,
-    string Title,
-    string Description,
-    float[] TitleMeaning,
-    float[] DescriptionMeaning,
-    float[] PageMeaning
-);
