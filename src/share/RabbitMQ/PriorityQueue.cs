@@ -82,7 +82,7 @@ public enum PriorityLevel
 
 public delegate Task MessageHandler<T>(T message);
 
-class PollingService<T> : IHostedService
+public class PollingService<T> : IHostedService
 {
     private PollingOptions _options;
     private PriorityQueue<T> _queue;
@@ -158,7 +158,7 @@ class PollingService<T> : IHostedService
     }
 }
 
-class PollingOptions 
+public class PollingOptions 
 {
     public TimeSpan IdleSleepTime { get; init;} = TimeSpan.FromMilliseconds(100);
     public TimeSpan TaskWaitingSleepTime { get; init; } = TimeSpan.FromMilliseconds(20);
