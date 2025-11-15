@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>google-for-dummies</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo h1 {
+            font-size: 80px;
+            font-weight: 400;
+            color: #4285f4;
+            letter-spacing: -2px;
+            white-space: nowrap;
+            margin: 0;
+            padding: 0;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            font-size: 16px;
+            outline: none;
+            transition: box-shadow 0.2s;
+        }
+
+        .search-input:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .search-input:focus {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            border-color: #4285f4;
+        }
+
+        .search-button {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .search-button:hover {
+            background: #357ae8;
+        }
+
+        .search-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-item {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ebebeb;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-title {
+            font-size: 20px;
+            color: #1a0dab;
+            text-decoration: none;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .result-title:hover {
+            text-decoration: underline;
+        }
+
+        .result-url {
+            font-size: 14px;
+            color: #006621;
+            margin-bottom: 5px;
+        }
+
+        .result-snippet {
+            font-size: 14px;
+            color: #545454;
+            line-height: 1.5;
+        }
+
+        .error {
+            color: #d93025;
+            padding: 15px;
+            background: #fce8e6;
+            border-radius: 4px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>google-for-dummies</h1>
+        </div>
+
+        <div class="search-box">
+            <input type="text" class="search-input" id="searchInput" placeholder="Введите поисковый запрос..." autocomplete="off">
+            <button class="search-button" id="searchButton" onclick="performSearch()">Поиск</button>
+        </div>
+
+        <div class="error" id="errorMessage"></div>
+        <div class="loading" id="loading">Поиск...</div>
+
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const results = document.getElementById('results');
+        const errorMessage = document.getElementById('errorMessage');
+        const loading = document.getElementById('loading');
+
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+        async function performSearch() {
+            const query = searchInput.value.trim();
+            
+            if (!query) {
+                showError('Please enter a search query');
+                return;
+            }
+
+            hideError();
+            showLoading();
+            hideResults();
+
+            try {
+                const response = await fetch('/api/search/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        pageSize: 10,
+                        pageNumber: 1
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Error performing search');
+                }
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function displayResults(data) {
+            if (!data.results || data.results.length === 0) {
+                results.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No results found</p>';
+                results.classList.add('show');
+                return;
+            }
+
+            let html = '';
+            data.results.forEach(result => {
+                html += `
+                    <div class="result-item">
+                        <a href="${result.url}" class="result-title" target="_blank">${result.title}</a>
+                        <div class="result-url">${result.url}</div>
+                        <div class="result-snippet">${result.snippet}</div>
+                    </div>
+                `;
+            });
+
+            results.innerHTML = html;
+            results.classList.add('show');
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('show');
+        }
+
+        function showLoading() {
+            loading.classList.add('show');
+            searchButton.disabled = true;
+        }
+
+        function hideLoading() {
+            loading.classList.remove('show');
+            searchButton.disabled = false;
+        }
+
+        function hideResults() {
+            results.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
+
