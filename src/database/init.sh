@@ -1,3 +1,4 @@
 #!/usr/bin/env sh
+set -e
 
-psql -U $POSTGRES_USER -d $POSTGRES_DB -a -f /app/scripts/db/seed.sql
+psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f /docker-entrypoint-initdb.d/seed.sql

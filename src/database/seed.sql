@@ -12,6 +12,6 @@ CREATE TABLE IF NOT EXISTS WebsiteRecord (
 );
 
 
-CREATE INDEX embedding_idx ON WebsiteRecord USING diskann (TitleMeaning);
-CREATE INDEX embedding_idx ON WebsiteRecord USING diskann (DescriptionMeaning);
-CREATE INDEX embedding_idx ON WebsiteRecord USING diskann (PageMeaning);
+CREATE INDEX embedding_idx_title ON WebsiteRecord USING diskann (TitleMeaning);
+CREATE INDEX embedding_idx_description ON WebsiteRecord USING diskann (DescriptionMeaning);
+CREATE INDEX embedding_idx_page ON WebsiteRecord USING diskann (PageMeaning);
