@@ -11,10 +11,12 @@
     <PackageReference Include="LM-Kit.NET" Version="2025.11.2" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.22" />
+    <PackageReference Include="Serilog" Version="4.3.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\share\share.csproj" />
+    <ProjectReference Include="..\share\share.csproj" />
   </ItemGroup>
 
 </Project>

@@ -5,14 +5,16 @@ EXPOSE 8081
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
-COPY ["app/Api-server/Api-server.csproj", "app/Api-server/"]
-RUN dotnet restore "app/Api-server/Api-server.csproj"
-COPY app/Api-server/ app/Api-server/
-WORKDIR "/src/app/Api-server"
+COPY ["api-server/Api-server.csproj", "api-server/"]
+COPY ["share/share.csproj", "share/"]
+RUN dotnet restore "api-server/Api-server.csproj"
+COPY api-server/ api-server/
+COPY share/ share/
+WORKDIR "/src/api-server"
 RUN dotnet build "Api-server.csproj" -c Release -o /app/build
 
 FROM build AS publish
-WORKDIR "/src/app/Api-server"
+WORKDIR "/src/api-server"
 RUN dotnet publish "Api-server.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
