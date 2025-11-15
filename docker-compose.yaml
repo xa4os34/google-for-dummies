@@ -40,6 +40,20 @@ services:
       - backend
       - frontend
 
+  api-server:
+    build:
+      context: src/
+      dockerfile: app/Api-server/Dockerfile
+    restart: always
+    ports:
+      - 5104:8080
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      - database
+      - rabbitmq
+
 
 
 networks:
