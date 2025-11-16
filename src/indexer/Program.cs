@@ -16,7 +16,8 @@ builder.Services.AddPooledDbContextFactory<GfdDbContext>(
 
 builder.Services.AddSingleton<IGfdDataService>(_ => new GfdDataService(cs, poolSize));
 builder.Services.AddSingleton<LanguageModel>();
-builder.Services.AddSingleton<RabbitMqPuller>(services => {
+builder.Services.AddSingleton<RabbitMqPuller>(services =>
+{
     IConfigurationSection options = builder.Configuration.GetSection("RabbitMQ");
     return new RabbitMqPuller(
         options["host"],
@@ -43,7 +44,7 @@ class IndexingService : BackgroundService
     public IndexingService(
         IGfdDataService dataService,
         LanguageModel embeddingService,
-        RabbitMqPuller puller) 
+        RabbitMqPuller puller)
     {
         _dataService = dataService;
         _embeddingService = embeddingService;
@@ -52,11 +53,11 @@ class IndexingService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        while (!stoppingToken.IsCancellationRequested) 
+        while (!stoppingToken.IsCancellationRequested)
         {
-            IndexingData? data = (await _puller.PullWithPriorityAsync<IndexingData>(IndexingQueueName, stoppingToken)).Item2;
+            IndexingData? data = (await _puller.PullWithPriorityAsync<IndexingData>(IndexingQueueName, stoppingToken)).Message;
 
-            if (data is null) 
+            if (data is null)
             {
                 await Task.Delay(IdleTimeWhenQueueIsEmpty);
                 continue;
