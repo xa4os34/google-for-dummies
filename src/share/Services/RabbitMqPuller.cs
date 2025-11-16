@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 
 
 namespace Gfd.Services;
@@ -9,7 +10,7 @@ namespace Gfd.Services;
 public interface IRabbitMqPuller
 {
 	Task<T?> PullAsync<T>(string queueName, CancellationToken cancellationToken = default);
-	Task<(MessagePriorityLevel, T?)> PullWithPriorityAsync<T>(string baseQueueName, CancellationToken cancellationToken = default);
+	Task<(MessagePriorityLevel Priority, T? Message)> PullWithPriorityAsync<T>(string baseQueueName, CancellationToken cancellationToken = default);
 }
 
 public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
@@ -45,13 +46,10 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 			_connection = await _factory.CreateConnectionAsync();
 		}
 
-		if (_channels.TryTake(out var ch) && ch.IsOpen)
-			return ch;
-
 		await _channelLock.WaitAsync(ct);
 		try
 		{
-			if (_channels.TryTake(out ch) && ch.IsOpen)
+			if (_channels.TryTake(out var ch) && ch.IsOpen)
 				return ch;
 			return await _connection.CreateChannelAsync();
 		}
@@ -67,13 +65,12 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 		if (channel.IsOpen)
 		{
 			_channels.Add(channel);
-			_channelLock.Release();
 		}
 		else
 		{
 			channel.Dispose();
-			_channelLock.Release();
 		}
+		_channelLock.Release();
 	}
 
 	private Task<T?> PullAsync<T>(string baseQueueName, MessagePriorityLevel priority, CancellationToken cancellationToken = default)
@@ -82,7 +79,7 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 		return PullAsync<T>(queue, cancellationToken);
 	}
 
-	public async Task<(MessagePriorityLevel, T?)> PullWithPriorityAsync<T>(string baseQueueName, CancellationToken cancellationToken = default)
+	public async Task<(MessagePriorityLevel Priority, T? Message)> PullWithPriorityAsync<T>(string baseQueueName, CancellationToken cancellationToken = default)
 	{
 		int roll = _random.Next(1, 16);
 		MessagePriorityLevel level = roll <= 1 ? MessagePriorityLevel.OnlyWhenIdle
@@ -94,32 +91,68 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 		return (level, await PullAsync<T>(baseQueueName, level, cancellationToken));
 	}
 
-	public async Task<T?> PullAsync<T>(string queueName, CancellationToken cancellationToken = default)
+	private async Task EnsureQueueExistsAsync(IChannel channel, string queueName)
 	{
-		var ch = await RentChannelAsync(cancellationToken);
 		try
 		{
+			await channel.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false);
+		}
+		catch
+		{
+			// Queue might already exist, ignore
+		}
+	}
+
+	private T? ProcessResult<T>(BasicGetResult? result)
+	{
+		if (result is null || result.Body.IsEmpty)
+			return default;
+
+		if (typeof(T) == typeof(byte[]))
+		{
+			object bytes = result.Body.ToArray();
+			return (T)bytes;
+		}
+
+		if (typeof(T) == typeof(string))
+		{
+			object s = Encoding.UTF8.GetString(result.Body.ToArray());
+			return (T)s;
+		}
+
+		return JsonSerializer.Deserialize<T>(result.Body.Span, _jsonOptions);
+	}
+
+	public async Task<T?> PullAsync<T>(string queueName, CancellationToken cancellationToken = default)
+	{
+		IChannel? ch = null;
+		try
+		{
+			ch = await RentChannelAsync(cancellationToken);
+			await EnsureQueueExistsAsync(ch, queueName);
 			BasicGetResult? result = await ch.BasicGetAsync(queueName, autoAck: true, cancellationToken);
-			if (result is null || result.Body.IsEmpty)
-				return default;
-
-			if (typeof(T) == typeof(byte[]))
+			return ProcessResult<T>(result);
+		}
+		catch (OperationInterruptedException ex) when (ex.ShutdownReason?.ReplyCode == 404)
+		{
+			// Queue doesn't exist, channel might be closed, get a new one and create queue
+			if (ch != null)
 			{
-				object bytes = result.Body.ToArray();
-				return (T)bytes;
+				ReturnChannel(ch);
+				ch = null; // Mark as returned
 			}
-
-			if (typeof(T) == typeof(string))
-			{
-				object s = Encoding.UTF8.GetString(result.Body.ToArray());
-				return (T)s;
-			}
-
-			return JsonSerializer.Deserialize<T>(result.Body.Span, _jsonOptions);
+			ch = await RentChannelAsync(cancellationToken);
+			await EnsureQueueExistsAsync(ch, queueName);
+			// Retry BasicGetAsync - queue should exist now
+			BasicGetResult? result = await ch.BasicGetAsync(queueName, autoAck: true, cancellationToken);
+			return ProcessResult<T>(result);
 		}
 		finally
 		{
-			ReturnChannel(ch);
+			if (ch != null)
+			{
+				ReturnChannel(ch);
+			}
 		}
 	}
 

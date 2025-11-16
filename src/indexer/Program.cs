@@ -54,7 +54,7 @@ class IndexingService : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested) 
         {
-            IndexingData? data = await _puller.PullWithPriorityAsync<IndexingData>(IndexingQueueName, stoppingToken);
+            IndexingData? data = (await _puller.PullWithPriorityAsync<IndexingData>(IndexingQueueName, stoppingToken)).Item2;
 
             if (data is null) 
             {
