@@ -2,25 +2,25 @@ using Gfd.Models;
 using LMKit.Embeddings;
 using LMKit.Model;
 using Microsoft.Extensions.Configuration;
-using Serilog;
+using Microsoft.Extensions.Logging;
 
-namespace GoogleForDummys.Share.Services;
+namespace Gfd.Services;
 
 public class LanguageModel
 {
     private readonly Embedder _embedder;
 
-    public LanguageModel(IConfiguration configuration, ILogger logger)
+    public LanguageModel(IConfiguration configuration, ILogger<LanguageModel> logger)
     {
-        logger.Information("Start initializing LMKit.)");
+        logger.LogInformation("Start initializing LMKit.)");
         LMKit.Global.Runtime.Initialize();
-        logger.Information("End of LMKit initialization.)");
+        logger.LogInformation("End of LMKit initialization.)");
 
         var modelUrl = configuration.GetValue<string?>("EMBEDDER_MODEL_URL");
 
         if (string.IsNullOrEmpty(modelUrl))
         {
-            logger.Warning("Using default model (nomic-embed-text).");
+            logger.LogWarning("Using default model (nomic-embed-text).");
             modelUrl = "https://huggingface.co/lm-kit/nomic-embed-text-1.5/resolve/main/nomic-embed-text-1.5-F16.gguf";
         }
 
