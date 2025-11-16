@@ -71,11 +71,24 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher, IAsyncDisposable
 		}
 	}
 
+	private async Task EnsureQueueExistsAsync(IChannel channel, string queueName)
+	{
+		try
+		{
+			await channel.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false);
+		}
+		catch
+		{
+			// Queue might already exist, ignore
+		}
+	}
+
 	public async Task PublishAsync<T>(string queueName, T message, JsonSerializerOptions? jsonOptions = null, CancellationToken cancellationToken = default)
 	{
 		var ch = await RentChannelAsync(cancellationToken);
 		try
 		{
+			await EnsureQueueExistsAsync(ch, queueName);
 			var payload = JsonSerializer.SerializeToUtf8Bytes(message, jsonOptions ?? new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 			await ch.BasicPublishAsync(exchange: string.Empty, routingKey: queueName, body: payload);
 		}

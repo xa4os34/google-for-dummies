@@ -5,6 +5,9 @@ services:
       dockerfile: indexer/Dockerfile
     environment: 
       RabbitMQ__host: "rabbitmq"
+      EMBEDDER_MODEL_URL: /ai-models/nomic-embed-text-1.5-F16.gguf
+    volumes:
+      - ./src/ai-models/:/ai-models/
     networks:
       - backend
     depends_on:
@@ -26,10 +29,9 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - backend
 
@@ -47,6 +49,11 @@ services:
       context: src/
       dockerfile: api-server/Dockerfile
     restart: always
+    environment: 
+      EMBEDDER_MODEL_URL: /ai-models/nomic-embed-text-1.5-F16.gguf
+      ConnectionStrings__Default: "Host=database;Port=5432;Database=postgres;Username=postgres;Password=postgres"
+    volumes:
+      - ./src/ai-models/:/ai-models/
     ports:
       - 5104:8080
     networks:
