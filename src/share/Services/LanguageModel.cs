@@ -1,4 +1,5 @@
 using Gfd.Models;
+using Pgvector;
 using LMKit.Embeddings;
 using LMKit.Model;
 using Microsoft.Extensions.Configuration;
@@ -39,9 +40,9 @@ public class LanguageModel
             Url: data.Url,
             Title: data.Title,
             Description: data.Description,
-            TitleMeaning: titleMeaning,
-            DescriptionMeaning: descriptionMeaning,
-            PageMeaning: pageMeaning
+            TitleMeaning: new Vector(titleMeaning),
+            DescriptionMeaning: new Vector(descriptionMeaning),
+            PageMeaning: new Vector(pageMeaning)
         );
     }
 }

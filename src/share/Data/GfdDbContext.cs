@@ -18,37 +18,37 @@ public sealed class GfdDbContext : DbContext
 
 		modelBuilder.Entity<WebsiteRecord>(entity =>
 		{
-			entity.ToTable("WebsiteRecord");
+			entity.ToTable("website_record");
 
 			entity.HasKey(e => e.Id);
 
 			entity.Property(e => e.Id)
-				.HasColumnName("Id")
+				.HasColumnName("id")
 				.HasColumnType("uuid")
 				.IsRequired();
 
 			entity.Property(e => e.Url)
-				.HasColumnName("Url")
+				.HasColumnName("url")
 				.HasColumnType("varchar(4096)");
 
 			entity.Property(e => e.Title)
-				.HasColumnName("Title")
+				.HasColumnName("title")
 				.HasColumnType("varchar(1024)");
 
 			entity.Property(e => e.Description)
-				.HasColumnName("Description")
+				.HasColumnName("description")
 				.HasColumnType("varchar(2048)");
 
 			entity.Property(e => e.TitleMeaning)
-				.HasColumnName("TitleMeaning")
+				.HasColumnName("title_meaning")
 				.HasColumnType("vector(768)");
 
 			entity.Property(e => e.DescriptionMeaning)
-				.HasColumnName("DescriptionMeaning")
+				.HasColumnName("description_meaning")
 				.HasColumnType("vector(768)");
 
 			entity.Property(e => e.PageMeaning)
-				.HasColumnName("PageMeaning")
+				.HasColumnName("page_meaning")
 				.HasColumnType("vector(768)");
 		});
 	}
