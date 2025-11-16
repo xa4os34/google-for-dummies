@@ -32,7 +32,7 @@ services:
   api-server:
     build:
       context: src/
-      dockerfile: Api-server/Dockerfile
+      dockerfile: api-server/Dockerfile
     restart: always
     ports:
       - 5104:8080
