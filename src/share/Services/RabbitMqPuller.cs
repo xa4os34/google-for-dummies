@@ -9,7 +9,7 @@ namespace Gfd.Services;
 public interface IRabbitMqPuller
 {
 	Task<T?> PullAsync<T>(string queueName, CancellationToken cancellationToken = default);
-	Task<T?> PullWithPriorityAsync<T>(string baseQueueName, CancellationToken cancellationToken = default);
+	Task<(MessagePriorityLevel, T?)> PullWithPriorityAsync<T>(string baseQueueName, CancellationToken cancellationToken = default);
 }
 
 public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
@@ -76,23 +76,23 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 		}
 	}
 
-private Task<T?> PullAsync<T>(string baseQueueName, MessagePriorityLevel priority, CancellationToken cancellationToken = default)
-{
-	var queue = priority.GetQueueName(baseQueueName);
-	return PullAsync<T>(queue, cancellationToken);
-}
+	private Task<T?> PullAsync<T>(string baseQueueName, MessagePriorityLevel priority, CancellationToken cancellationToken = default)
+	{
+		var queue = priority.GetQueueName(baseQueueName);
+		return PullAsync<T>(queue, cancellationToken);
+	}
 
-public async Task<T?> PullWithPriorityAsync<T>(string baseQueueName, CancellationToken cancellationToken = default)
-{
-	int roll = _random.Next(1, 16);
-	MessagePriorityLevel level = roll <= 1 ? MessagePriorityLevel.OnlyWhenIdle
-		: roll <= 3 ? MessagePriorityLevel.Low
-		: roll <= 6 ? MessagePriorityLevel.Normal
-		: roll <= 10 ? MessagePriorityLevel.High
-		: MessagePriorityLevel.RealTime;
+	public async Task<(MessagePriorityLevel, T?)> PullWithPriorityAsync<T>(string baseQueueName, CancellationToken cancellationToken = default)
+	{
+		int roll = _random.Next(1, 16);
+		MessagePriorityLevel level = roll <= 1 ? MessagePriorityLevel.OnlyWhenIdle
+			: roll <= 3 ? MessagePriorityLevel.Low
+			: roll <= 6 ? MessagePriorityLevel.Normal
+			: roll <= 10 ? MessagePriorityLevel.High
+			: MessagePriorityLevel.RealTime;
 
-	return await PullAsync<T>(baseQueueName, level, cancellationToken);
-}
+		return (level, await PullAsync<T>(baseQueueName, level, cancellationToken));
+	}
 
 	public async Task<T?> PullAsync<T>(string queueName, CancellationToken cancellationToken = default)
 	{
