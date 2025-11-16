@@ -1,12 +1,14 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using RabbitMQ.Client;
+using GoogleForDummies.Services;
 
-namespace GoogleForDummies.Services;
+namespace Gfd.Services;
 
 public interface IRabbitMqPublisher
 {
 	Task PublishAsync<T>(string queueName, T message, JsonSerializerOptions? jsonOptions = null, CancellationToken cancellationToken = default);
+	Task PublishAsync<T>(string baseQueueName, MessagePriorityLevel priority, T message, JsonSerializerOptions? jsonOptions = null, CancellationToken cancellationToken = default);
 }
 
 public sealed class RabbitMqPublisher : IRabbitMqPublisher, IAsyncDisposable
@@ -82,6 +84,12 @@ public sealed class RabbitMqPublisher : IRabbitMqPublisher, IAsyncDisposable
 		{
 			ReturnChannel(ch);
 		}
+	}
+
+	public Task PublishAsync<T>(string baseQueueName, MessagePriorityLevel priority, T message, JsonSerializerOptions? jsonOptions = null, CancellationToken cancellationToken = default)
+	{
+		var queue = priority.GetQueueName(baseQueueName);
+		return PublishAsync(queue, message, jsonOptions, cancellationToken);
 	}
 
 	public async ValueTask DisposeAsync()
