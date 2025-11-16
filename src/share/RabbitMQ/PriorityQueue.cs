@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 
+[Obsolete]
 public class PriorityQueue<T>
 {
     private Random random = new Random();
