@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using RabbitMQ.Client;
-using GoogleForDummies.Services;
 
 namespace Gfd.Services;
 
