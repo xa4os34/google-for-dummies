@@ -1,13 +1,12 @@
 
 namespace Gfd.Models;
 
-public class CrawlingFeedback 
+public class CrawlingFeedback
 {
-    public required Uri BaseUrl { get; init; }
-
-    public required Uri[] NewUrls { get; init; } = new Uri[0];
-
-    public Uri[] DisallowedUrls  { get; init; } = new Uri[0];
-    
-    public TimeSpan? NewCrawlingDelay { get; init; }
+    public Uri BaseUrl { get; init; }
+    public int CrawlingDelay { get; set; }
+    public List<string> Allowed { get; set; } = new();
+    public List<string> DisAllowed { get; set; } = new();
+    public List<string> Sitemaps { get; set; } = new();
+    public CrawlingFeedback(Uri baseUrl) => BaseUrl = baseUrl;
 }
