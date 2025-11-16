@@ -1,0 +1,11 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build 
+ADD indexer /indexer
+ADD share /share
+RUN dotnet publish indexer -o out;
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+RUN mkdir -p /app;
+COPY --from=build /out/. /app/
+WORKDIR /app
+
+ENTRYPOINT [ "dotnet", "indexer.dll" ]

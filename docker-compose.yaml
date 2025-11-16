@@ -1,4 +1,17 @@
 services:
+  indexer:
+    build: 
+      context: src/
+      dockerfile: indexer/Dockerfile
+    environment: 
+      RabbitMQ__host: "rabbitmq"
+    networks:
+      - backend
+    depends_on:
+      - rabbitmq
+      - database
+
+
   rabbitmq:
     image: "rabbitmq:alpine"
     restart: always
