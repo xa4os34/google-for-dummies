@@ -9,7 +9,7 @@ namespace Gfd.Services;
 public interface IRabbitMqPuller
 {
 	Task<T?> PullAsync<T>(string queueName, CancellationToken cancellationToken = default);
-	Task<(MessagePriorityLevel, T?)> PullWithPriorityAsync<T>(string baseQueueName, CancellationToken cancellationToken = default);
+	Task<(MessagePriorityLevel Priority, T? Message)> PullWithPriorityAsync<T>(string baseQueueName, CancellationToken cancellationToken = default);
 }
 
 public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
@@ -82,7 +82,7 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 		return PullAsync<T>(queue, cancellationToken);
 	}
 
-	public async Task<(MessagePriorityLevel, T?)> PullWithPriorityAsync<T>(string baseQueueName, CancellationToken cancellationToken = default)
+	public async Task<(MessagePriorityLevel Priority, T? Message)> PullWithPriorityAsync<T>(string baseQueueName, CancellationToken cancellationToken = default)
 	{
 		int roll = _random.Next(1, 16);
 		MessagePriorityLevel level = roll <= 1 ? MessagePriorityLevel.OnlyWhenIdle
