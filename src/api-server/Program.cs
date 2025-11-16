@@ -1,4 +1,6 @@
-using GoogleForDummys.Share.Services;
+using Gfd.Data;
+using Gfd.Services;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 internal class Program
 {
@@ -8,14 +10,23 @@ internal class Program
             .WriteTo.Console()
             .CreateLogger();
         var builder = WebApplication.CreateBuilder(args);
+
+        var cs = builder.Configuration.GetConnectionString("Default");
+        var poolSize = builder.Configuration.GetValue<int>("Db:PoolSize", 16);
+
+        builder.Services.AddPooledDbContextFactory<GfdDbContext>(
+            o => o
+                .UseNpgsql(cs, npgsql => npgsql.EnableRetryOnFailure())
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking),
+            poolSize);
+
+        builder.Services.AddSingleton<IGfdDataService>(_ => new GfdDataService(cs, poolSize));
+        
         builder.Host.UseSerilog();
-        builder.Services.AddSingleton<Serilog.ILogger>(_ => Log.Logger); // Возможно это не лучшее решение и проблема в share/Services/LanguageModel
         builder.Services.AddControllers();
         builder.Services.AddControllersWithViews();
         builder.Services.AddSingleton<LanguageModel>();
         var app = builder.Build();
-
-        app.UseStaticFiles();
 
         app.MapControllers();
         app.MapControllerRoute(
@@ -23,7 +34,5 @@ internal class Program
             pattern: "{controller=Home}/{action=Index}/{id?}");
 
         app.Run();
-
     }
-
 }

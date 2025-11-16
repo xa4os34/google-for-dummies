@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Api_server.Models;
+using Gfd.Services;
 
 namespace Api_server.Controllers;
 
@@ -8,6 +9,12 @@ namespace Api_server.Controllers;
 [Produces("application/json")]
 public class SearchController : ControllerBase
 {
+    private readonly IGfdDataService _dataService;
+    public SearchController(IGfdDataService dataService)
+    {
+        _dataService = dataService;
+    }
+    
     [HttpPost("search")]
     public IActionResult Search([FromBody] SearchRequest request)
     {
