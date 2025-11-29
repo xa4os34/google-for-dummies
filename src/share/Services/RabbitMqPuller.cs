@@ -73,18 +73,6 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 		_channelLock.Release();
 	}
 
-	private async Task EnsureQueueExistsAsync(IChannel channel, string queueName)
-	{
-		try
-		{
-			await channel.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false);
-		}
-		catch
-		{
-			// Queue might already exist, ignore
-		}
-	}
-
 	private Task<T?> PullAsync<T>(string baseQueueName, MessagePriorityLevel priority, CancellationToken cancellationToken = default)
 	{
 		var queue = priority.GetQueueName(baseQueueName);
