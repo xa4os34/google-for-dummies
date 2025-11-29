@@ -1,4 +1,18 @@
 services:
+  crawler:
+    build:
+      context: src/
+      dockerfile: crawler/Dockerfile
+    restart: always
+    environment:
+      RabbitMQ__Host: "rabbitmq"
+    networks:
+      - backend
+      - frontend
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
   indexer:
     build: 
       context: src/
@@ -14,12 +28,20 @@ services:
       - rabbitmq
       - database
 
-
   rabbitmq:
-    image: "rabbitmq:alpine"
+    image: "rabbitmq:management-alpine"
     restart: always
+    ports:
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - backend
+      - frontend
 
   database:
     build: src/database
