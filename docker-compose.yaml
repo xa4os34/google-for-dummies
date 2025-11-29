@@ -24,12 +24,9 @@ services:
       - rabbitmq
       - database
 
-
   rabbitmq:
-    image: "rabbitmq:alpine"
+    image: "rabbitmq:management-alpine"
     restart: always
-    environment:
-      RABBITMQ_ENABLED_PLUGINS: rabbitmq_management,rabbitmq_management_agent,rabbitmq_prometheus,rabbitmq_web_dispatch
     ports:
       - "15672:15672"
     healthcheck:
