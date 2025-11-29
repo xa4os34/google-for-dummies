@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 
 
 namespace Gfd.Services;
@@ -45,13 +46,11 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 			_connection = await _factory.CreateConnectionAsync();
 		}
 
-		if (_channels.TryTake(out var ch) && ch.IsOpen)
-			return ch;
-
+		// Always acquire semaphore to ensure proper Release() pairing
 		await _channelLock.WaitAsync(ct);
 		try
 		{
-			if (_channels.TryTake(out ch) && ch.IsOpen)
+			if (_channels.TryTake(out var ch) && ch.IsOpen)
 				return ch;
 			return await _connection.CreateChannelAsync();
 		}
@@ -64,15 +63,37 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 
 	private void ReturnChannel(IChannel channel)
 	{
-		if (channel.IsOpen)
+		try
 		{
-			_channels.Add(channel);
+			if (channel.IsOpen)
+			{
+				_channels.Add(channel);
+			}
+			else
+			{
+				channel.Dispose();
+			}
+		}
+		catch
+		{
+			// Channel might be already disposed, ignore
+			try { channel.Dispose(); } catch { }
+		}
+		finally
+		{
 			_channelLock.Release();
 		}
-		else
+	}
+
+	private async Task EnsureQueueExistsAsync(IChannel channel, string queueName)
+	{
+		try
 		{
-			channel.Dispose();
-			_channelLock.Release();
+			await channel.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false);
+		}
+		catch
+		{
+			// Queue might already exist, ignore
 		}
 	}
 
@@ -94,32 +115,76 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 		return (level, await PullAsync<T>(baseQueueName, level, cancellationToken));
 	}
 
+	private T? ProcessResult<T>(BasicGetResult? result)
+	{
+		if (result is null || result.Body.IsEmpty)
+			return default;
+
+		if (typeof(T) == typeof(byte[]))
+		{
+			object bytes = result.Body.ToArray();
+			return (T)bytes;
+		}
+
+		if (typeof(T) == typeof(string))
+		{
+			object s = Encoding.UTF8.GetString(result.Body.ToArray());
+			return (T)s;
+		}
+
+		return JsonSerializer.Deserialize<T>(result.Body.Span, _jsonOptions);
+	}
+
 	public async Task<T?> PullAsync<T>(string queueName, CancellationToken cancellationToken = default)
 	{
-		var ch = await RentChannelAsync(cancellationToken);
+		IChannel? ch = null;
 		try
 		{
+			ch = await RentChannelAsync(cancellationToken);
+			await EnsureQueueExistsAsync(ch, queueName);
+			
 			BasicGetResult? result = await ch.BasicGetAsync(queueName, autoAck: true, cancellationToken);
-			if (result is null || result.Body.IsEmpty)
-				return default;
-
-			if (typeof(T) == typeof(byte[]))
+			return ProcessResult<T>(result);
+		}
+		catch (OperationInterruptedException ex) when (ex.ShutdownReason?.ReplyCode == 404)
+		{
+			// Queue doesn't exist, channel might be closed, dispose it and get a new one
+			if (ch != null)
 			{
-				object bytes = result.Body.ToArray();
-				return (T)bytes;
+				try
+				{
+					if (ch.IsOpen)
+					{
+						_channels.Add(ch);
+					}
+					else
+					{
+						ch.Dispose();
+					}
+				}
+				catch
+				{
+					try { ch.Dispose(); } catch { }
+				}
+				finally
+				{
+					_channelLock.Release();
+				}
+				ch = null;
 			}
-
-			if (typeof(T) == typeof(string))
-			{
-				object s = Encoding.UTF8.GetString(result.Body.ToArray());
-				return (T)s;
-			}
-
-			return JsonSerializer.Deserialize<T>(result.Body.Span, _jsonOptions);
+			
+			// Get new channel and retry
+			ch = await RentChannelAsync(cancellationToken);
+			await EnsureQueueExistsAsync(ch, queueName);
+			BasicGetResult? result = await ch.BasicGetAsync(queueName, autoAck: true, cancellationToken);
+			return ProcessResult<T>(result);
 		}
 		finally
 		{
-			ReturnChannel(ch);
+			if (ch != null)
+			{
+				ReturnChannel(ch);
+			}
 		}
 	}
 
