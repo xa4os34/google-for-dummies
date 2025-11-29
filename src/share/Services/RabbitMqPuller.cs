@@ -46,7 +46,6 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 			_connection = await _factory.CreateConnectionAsync();
 		}
 
-		// Always acquire semaphore to ensure proper Release() pairing
 		await _channelLock.WaitAsync(ct);
 		try
 		{
@@ -65,24 +64,13 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 	{
 		try
 		{
-			if (channel.IsOpen)
-			{
-				_channels.Add(channel);
-			}
-			else
-			{
-				channel.Dispose();
-			}
-		}
-		catch
-		{
-			// Channel might be already disposed, ignore
-			try { channel.Dispose(); } catch { }
+			_channels.Add(channel);
 		}
 		finally
 		{
-			_channelLock.Release();
+			channel.Dispose();
 		}
+		_channelLock.Release();
 	}
 
 	private async Task EnsureQueueExistsAsync(IChannel channel, string queueName)
@@ -115,6 +103,18 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 		return (level, await PullAsync<T>(baseQueueName, level, cancellationToken));
 	}
 
+	private async Task EnsureQueueExistsAsync(IChannel channel, string queueName)
+	{
+		try
+		{
+			await channel.QueueDeclareAsync(queueName, durable: true, exclusive: false, autoDelete: false);
+		}
+		catch
+		{
+			// Queue might already exist, ignore
+		}
+	}
+
 	private T? ProcessResult<T>(BasicGetResult? result)
 	{
 		if (result is null || result.Body.IsEmpty)
@@ -142,40 +142,20 @@ public sealed class RabbitMqPuller : IRabbitMqPuller, IAsyncDisposable
 		{
 			ch = await RentChannelAsync(cancellationToken);
 			await EnsureQueueExistsAsync(ch, queueName);
-			
 			BasicGetResult? result = await ch.BasicGetAsync(queueName, autoAck: true, cancellationToken);
 			return ProcessResult<T>(result);
 		}
 		catch (OperationInterruptedException ex) when (ex.ShutdownReason?.ReplyCode == 404)
 		{
-			// Queue doesn't exist, channel might be closed, dispose it and get a new one
+			// Queue doesn't exist, channel might be closed, get a new one and create queue
 			if (ch != null)
 			{
-				try
-				{
-					if (ch.IsOpen)
-					{
-						_channels.Add(ch);
-					}
-					else
-					{
-						ch.Dispose();
-					}
-				}
-				catch
-				{
-					try { ch.Dispose(); } catch { }
-				}
-				finally
-				{
-					_channelLock.Release();
-				}
-				ch = null;
+				ReturnChannel(ch);
+				ch = null; // Mark as returned
 			}
-			
-			// Get new channel and retry
 			ch = await RentChannelAsync(cancellationToken);
 			await EnsureQueueExistsAsync(ch, queueName);
+			// Retry BasicGetAsync - queue should exist now
 			BasicGetResult? result = await ch.BasicGetAsync(queueName, autoAck: true, cancellationToken);
 			return ProcessResult<T>(result);
 		}

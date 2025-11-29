@@ -1,3 +1,5 @@
+using Pgvector;
+
 namespace Gfd.Models;
 
 public record WebsiteRecord(
@@ -5,7 +7,7 @@ public record WebsiteRecord(
     string Url,
     string Title,
     string Description,
-    float[] TitleMeaning,
-    float[] DescriptionMeaning,
-    float[] PageMeaning
+    Vector TitleMeaning,
+    Vector DescriptionMeaning,
+    Vector PageMeaning
 );
