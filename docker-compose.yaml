@@ -1,4 +1,17 @@
 services:
+  crawler:
+    build: 
+      context: src/
+      dockerfile: crawler/Dockerfile
+    restart: always
+    environment: 
+      RabbitMQ__Host: "rabbitmq"
+    networks:
+      - backend
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
   indexer:
     build: 
       context: src/
