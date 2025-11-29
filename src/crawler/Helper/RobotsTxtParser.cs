@@ -2,7 +2,7 @@ using Gfd.Models;
 
 public static class RobotsTxtParser
 {
-    public static void Parse(string robotsTxtSring, CrawlingFeedback crawlingFeedback)
+    public static void Parse(string robotsTxtSring, RobotsTxtFeedback crawlingFeedback)
     {
         string[] lines = robotsTxtSring.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
         string? userAgent = null;

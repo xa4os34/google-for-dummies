@@ -32,9 +32,9 @@ public class Crawler : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         const int retryDelayMs = 5000; // 5 секунд между попытками
-        
+
         _logger.LogInformation("Crawler service started");
-        
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -86,7 +86,7 @@ public class Crawler : BackgroundService
         try
         {
             _logger.LogInformation("Processing URL: {Url}", record.Url);
-            
+
             if (uri.IsBaseUrlAndRobotsTxt())
             {
                 _logger.LogInformation("Processing robots.txt for: {Url}", record.Url);
@@ -103,7 +103,7 @@ public class Crawler : BackgroundService
 
                 if (!string.IsNullOrEmpty(indexingData.Title))
                 {
-                    _logger.LogInformation("Extracted data from {Url}: Title='{Title}', Description length={DescLength}, Text length={TextLength}", 
+                    _logger.LogInformation("Extracted data from {Url}: Title='{Title}', Description length={DescLength}, Text length={TextLength}",
                         record.Url, indexingData.Title, indexingData.Description?.Length ?? 0, indexingData.PageText?.Length ?? 0);
                 }
                 else
@@ -120,13 +120,13 @@ public class Crawler : BackgroundService
             _logger.LogError(e, "Error processing URL {Url}: {ErrorMessage}", record.Url, e.Message);
         }
     }
-    private async Task<CrawlingFeedback> ProccessRobotsTxt(Uri uri)
+    private async Task<RobotsTxtFeedback> ProccessRobotsTxt(Uri uri)
     {
         string baseUri = uri.GetLeftPart(UriPartial.Authority);
         string sitemapUrl = $"{baseUri}/sitemap.xml";
         string robotsTxtUrl = $"{baseUri}/robots.txt";
 
-        CrawlingFeedback crawlingFeedback = new(uri);
+        RobotsTxtFeedback crawlingFeedback = new(uri);
         var client = _httpClientFactory.CreateClient("GfdClient");
 
         _logger.LogDebug("Fetching robots.txt from {RobotsTxtUrl}", robotsTxtUrl);
