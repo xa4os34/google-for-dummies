@@ -28,8 +28,19 @@ services:
   rabbitmq:
     image: "rabbitmq:alpine"
     restart: always
+    environment:
+      RABBITMQ_ENABLED_PLUGINS: rabbitmq_management,rabbitmq_management_agent,rabbitmq_prometheus,rabbitmq_web_dispatch
+    ports:
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - backend
+      - frontend
 
   database:
     build: src/database
