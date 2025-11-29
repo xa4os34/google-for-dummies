@@ -24,7 +24,7 @@ internal class Program
 		builder.Services.AddMemoryCache();
 		builder.Services.AddHttpClient("GfdClient", client =>
 		{
-			client.DefaultRequestHeaders.UserAgent.ParseAdd("GfdCrawler/1.0 (github.com/xa4os34/google-for-dummies)");
+			client.DefaultRequestHeaders.UserAgent.ParseAdd("GfdCrawler/1.0 (gfd.im-shrimp.com)");
 		});
 		builder.Services.AddSingleton<IRabbitMqPublisher>(_ =>
 			new RabbitMqPublisher(host, user, pass, vhost, port, pool));

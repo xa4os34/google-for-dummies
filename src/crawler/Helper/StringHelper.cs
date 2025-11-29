@@ -12,7 +12,10 @@ public static class StringHelpers
 
         string key = source[..colonIndex].Trim();
         string value = source[(colonIndex + 1)..].TrimStart();
+        int commentIndex = value.IndexOf('#');
 
+        if (commentIndex >= 0)
+            value = value[..commentIndex].TrimEnd(); 
         return (key, value);
     }
 }
